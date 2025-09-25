@@ -1,59 +1,112 @@
-# HelloWorld
+# 🚀 GitHubActions_Angular
 
-This project was generated using [Angular CLI](https://github.com/angular/angular-cli) version 20.3.2.
+[![PR Lint](https://github.com/abdemeh/GitHubActions_Angular/actions/workflows/pr-lint.yml/badge.svg)](https://github.com/abdemeh/GitHubActions_Angular/actions/workflows/pr-lint.yml)
+[![Deploy to GitHub Pages](https://github.com/abdemeh/GitHubActions_Angular/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/abdemeh/GitHubActions_Angular/actions/workflows/deploy-pages.yml)
 
-## Development server
+Un projet de démonstration Angular avec **GitHub Actions** pour mettre en place :
+- ✅ Un pipeline de **lint** automatique à chaque Pull Request  
+- ✅ Un pipeline de **déploiement** vers **GitHub Pages** après un merge sur `main`
 
-To start a local development server, run:
+---
 
-```bash
-ng serve
+## 🌍 Site déployé
+
+👉 [Voir le site en ligne](https://abdemeh.github.io/GitHubActions_Angular/)
+
+---
+
+## 📂 Structure du projet
+
+```
+TP-GITHUBACTIONS/
+├── .github/
+│   └── workflows/
+│       ├── deploy-pages.yml     # Déploiement auto sur GitHub Pages
+│       └── pr-lint.yml          # Lint du code sur chaque PR
+├── dist/
+│   └── hello-world/
+│       ├── browser/
+│       └── server/
+├── node_modules/
+├── public/
+├── src/
+│   └── app/
+├── .eslintrc.json
+├── angular.json
+├── eslint.config.js
+├── package-lock.json
+├── package.json
+├── README.md
+├── tsconfig.app.json
+├── tsconfig.json
+└── tsconfig.spec.json
 ```
 
-Once the server is running, open your browser and navigate to `http://localhost:4200/`. The application will automatically reload whenever you modify any of the source files.
+---
 
-## Code scaffolding
+## ⚙️ Pipelines CI/CD
 
-Angular CLI includes powerful code scaffolding tools. To generate a new component, run:
+### 1. **Lint sur Pull Request**
+Fichier : `.github/workflows/pr-lint.yml`  
+- Déclenché à chaque **pull request** vers `main`  
+- Vérifie la qualité du code avec ESLint (`npm run lint`)  
+- Bloque la fusion si des erreurs sont détectées  
 
+### 2. **Déploiement sur GitHub Pages**
+Fichier : `.github/workflows/deploy-pages.yml`  
+- Déclenché après un **merge sur `main`**  
+- Construit l'application Angular avec `ng build`  
+- Déploie automatiquement le contenu de `dist/` sur **GitHub Pages**  
+
+---
+
+## 🚀 Lancer le projet en local
+
+### 1. Installer les dépendances
 ```bash
-ng generate component component-name
+npm install
 ```
 
-For a complete list of available schematics (such as `components`, `directives`, or `pipes`), run:
-
+### 2. Lancer en mode développement
 ```bash
-ng generate --help
+npm start
+```
+➡️ Le projet sera accessible sur http://localhost:4200/
+
+### 3. Lancer le lint localement
+```bash
+npm run lint
 ```
 
-## Building
-
-To build the project run:
-
+### 4. Build en production
 ```bash
-ng build
+npm run build -- --configuration=production --base-href "/GitHubActions_Angular/"
+```
+➡️ Le build est généré dans `dist/`.
+
+---
+
+## 🤝 Contribuer
+
+### Créer une branche de feature
+```bash
+git checkout -b feature/ma-feature
 ```
 
-This will compile your project and store the build artifacts in the `dist/` directory. By default, the production build optimizes your application for performance and speed.
-
-## Running unit tests
-
-To execute unit tests with the [Karma](https://karma-runner.github.io) test runner, use the following command:
-
+### Commit & push
 ```bash
-ng test
+git add .
+git commit -m "feat: ajout de ma feature"
+git push origin feature/ma-feature
 ```
 
-## Running end-to-end tests
+### Ouvrir une Pull Request → le pipeline PR Lint doit passer ✅
+### Après merge → déploiement automatique sur GitHub Pages 🎉
 
-For end-to-end (e2e) testing, run:
+---
 
-```bash
-ng e2e
-```
+## 📌 Liens utiles
 
-Angular CLI does not come with an end-to-end testing framework by default. You can choose one that suits your needs.
-
-## Additional Resources
-
-For more information on using the Angular CLI, including detailed command references, visit the [Angular CLI Overview and Command Reference](https://angular.dev/tools/cli) page.
+- [Documentation Angular](https://angular.io/docs)
+- [GitHub Actions](https://docs.github.com/en/actions)
+- [GitHub Pages](https://pages.github.com/)
