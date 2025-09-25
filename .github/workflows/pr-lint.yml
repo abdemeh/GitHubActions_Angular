@@ -1,13 +1,9 @@
-name: PR Lint
-
-on:
-  pull_request:
-    types: [opened, synchronize, reopened]
-    branches: [main]
-
 jobs:
   lint:
     runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tp-githubactions   # 👈 add this
     steps:
       - name: Checkout
         uses: actions/checkout@v4
