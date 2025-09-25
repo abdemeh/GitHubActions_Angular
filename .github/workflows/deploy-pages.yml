@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]   # runs after a PR merge to main
+    branches: [main]
 
 permissions:
   contents: read
@@ -16,36 +16,36 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-
+    defaults:
+      run:
+        working-directory: tp-githubactions   # <-- PUT YOUR APP FOLDER HERE
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-
       - name: Install deps
         run: npm ci
-
       - name: Build Angular (project page baseHref)
         run: npm run build -- --configuration=production --base-href "/GitHubActions_Angular/"
 
-      # Read the build output path from angular.json (works with Angular old/new builders)
+      # Robustly find the built index.html (works for Angular 16/17/18)
       - name: Determine dist path
         id: dist
         run: |
-          node -e "const fs=require('fs');const a=JSON.parse(fs.readFileSync('angular.json','utf8'));const proj=Object.values(a.projects)[0];const out=(proj.architect?.build?.options?.outputPath)||(proj.targets?.build?.options?.outputPath);if(!out){process.exit(1)};console.log(out)" > dist_path.txt
-          echo "path=$(cat dist_path.txt)" >> $GITHUB_OUTPUT
-          echo "Resolved dist path: $(cat dist_path.txt)"
-          ls -la "$(cat dist_path.txt)"
+          CANDIDATE=$(find dist -maxdepth 3 -type f -name index.html -print -quit)
+          if [ -z "$CANDIDATE" ]; then
+            echo "::error ::No index.html found under dist/"
+            exit 1
+          fi
+          DIST_DIR=$(dirname "$CANDIDATE")
+          echo "path=$DIST_DIR" >> "$GITHUB_OUTPUT"
+          echo "Resolved dist path: $DIST_DIR"
+          ls -la "$DIST_DIR"
 
-      # SPA fallback so deep links don't 404 on Pages
       - name: Create SPA 404 fallback
-        run: |
-          cp "${{ steps.dist.outputs.path }}/index.html" "${{ steps.dist.outputs.path }}/404.html" || true
+        run: cp "${{ steps.dist.outputs.path }}/index.html" "${{ steps.dist.outputs.path }}/404.html" || true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
@@ -54,10 +54,10 @@ jobs:
 
   deploy:
     needs: build
+    runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
     steps:
       - name: Deploy to GitHub Pages
         id: deployment
