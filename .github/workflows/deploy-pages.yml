@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main]   # runs after a PR merge to main
 
 permissions:
   contents: read
@@ -16,27 +16,53 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: tp-githubactions   # <-- PUT YOUR APP FOLDER HERE
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 1) Find the Angular app folder automatically (the folder that has angular.json)
+      - name: Locate Angular app directory
+        id: loc
+        shell: bash
+        run: |
+          set -e
+          APP_DIR=$(git ls-files | grep -E '(^|.*/)(angular\.json)$' | head -n1 | xargs dirname)
+          if [ -z "$APP_DIR" ]; then
+            echo "::error ::No angular.json found in the repository."
+            exit 1
+          fi
+          echo "appdir=$APP_DIR" >> "$GITHUB_OUTPUT"
+          echo "Angular app directory: $APP_DIR"
+          ls -la "$APP_DIR"
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-      - name: Install deps
-        run: npm ci
-      - name: Build Angular (project page baseHref)
-        run: npm run build -- --configuration=production --base-href "/GitHubActions_Angular/"
+          cache-dependency-path: ${{ steps.loc.outputs.appdir }}/package-lock.json
 
-      # Robustly find the built index.html (works for Angular 16/17/18)
+      - name: Install deps
+        working-directory: ${{ steps.loc.outputs.appdir }}
+        run: npm ci
+
+      # 2) Build with correct base-href for a project page
+      - name: Build Angular
+        working-directory: ${{ steps.loc.outputs.appdir }}
+        run: |
+          REPO_NAME="${GITHUB_REPOSITORY#*/}"
+          npm run build -- --configuration=production --base-href "/$REPO_NAME/"
+
+      # 3) Find the built index.html (works for Angular 16/17/18 output layouts)
       - name: Determine dist path
         id: dist
+        working-directory: ${{ steps.loc.outputs.appdir }}
+        shell: bash
         run: |
-          CANDIDATE=$(find dist -maxdepth 3 -type f -name index.html -print -quit)
+          set -e
+          CANDIDATE=$(find dist -maxdepth 4 -type f -name index.html -print -quit)
           if [ -z "$CANDIDATE" ]; then
-            echo "::error ::No index.html found under dist/"
+            echo "::error ::No index.html found under dist/ after build."
             exit 1
           fi
           DIST_DIR=$(dirname "$CANDIDATE")
@@ -44,13 +70,15 @@ jobs:
           echo "Resolved dist path: $DIST_DIR"
           ls -la "$DIST_DIR"
 
+      # 4) SPA fallback so deep links don’t 404 on Pages
       - name: Create SPA 404 fallback
+        working-directory: ${{ steps.loc.outputs.appdir }}
         run: cp "${{ steps.dist.outputs.path }}/index.html" "${{ steps.dist.outputs.path }}/404.html" || true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ${{ steps.dist.outputs.path }}
+          path: ${{ steps.loc.outputs.appdir }}/${{ steps.dist.outputs.path }}
 
   deploy:
     needs: build
