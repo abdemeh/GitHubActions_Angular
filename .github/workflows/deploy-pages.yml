@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [main]
+    branches: [main]   # runs after a PR merge to main
 
 permissions:
   contents: read
@@ -16,6 +16,7 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -29,12 +30,22 @@ jobs:
       - name: Install deps
         run: npm ci
 
-      - name: Build Angular (project page)
+      - name: Build Angular (project page baseHref)
         run: npm run build -- --configuration=production --base-href "/GitHubActions_Angular/"
 
-      - name: Locate dist folder
+      # Read the build output path from angular.json (works with Angular old/new builders)
+      - name: Determine dist path
         id: dist
-        run: echo "path=$(ls -d dist/* | head -n 1)" >> "$GITHUB_OUTPUT"
+        run: |
+          node -e "const fs=require('fs');const a=JSON.parse(fs.readFileSync('angular.json','utf8'));const proj=Object.values(a.projects)[0];const out=(proj.architect?.build?.options?.outputPath)||(proj.targets?.build?.options?.outputPath);if(!out){process.exit(1)};console.log(out)" > dist_path.txt
+          echo "path=$(cat dist_path.txt)" >> $GITHUB_OUTPUT
+          echo "Resolved dist path: $(cat dist_path.txt)"
+          ls -la "$(cat dist_path.txt)"
+
+      # SPA fallback so deep links don't 404 on Pages
+      - name: Create SPA 404 fallback
+        run: |
+          cp "${{ steps.dist.outputs.path }}/index.html" "${{ steps.dist.outputs.path }}/404.html" || true
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
