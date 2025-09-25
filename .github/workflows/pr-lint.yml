@@ -1,21 +1,23 @@
+name: PR Lint
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    branches: [main]
+  push:
+    branches:
+      - feature/**
+      - main         # add this only if you want lint on main pushes too
+
 jobs:
   lint:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: tp-githubactions   # 👈 add this
+    # defaults: { run: { working-directory: tp-githubactions } }  # keep if your app lives in a subfolder
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: '20'
           cache: 'npm'
-
-      - name: Install deps
-        run: npm ci
-
-      - name: Lint
-        run: npm run lint
+      - run: npm ci
+      - run: npm run lint
